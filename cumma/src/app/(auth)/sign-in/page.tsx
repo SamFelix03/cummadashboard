@@ -1,13 +1,11 @@
 "use client"
-
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { signIn, useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
-
+import { Suspense, useEffect } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { LoadingButton } from '@/components/ui/loading-button'
@@ -18,7 +16,8 @@ import { cn } from '@/lib/utils'
 
 type FormData = z.infer<typeof signInSchema>
 
-export default function SignIn() {
+// Separate component for the form content
+function SignInForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session } = useSession()
@@ -49,7 +48,6 @@ export default function SignIn() {
         password: data.password,
         redirect: false,
       })
-
       if (result?.error) {
         setError('root', { 
           type: 'manual',
@@ -77,7 +75,6 @@ export default function SignIn() {
           Sign in with your email and password to explore more features on Cumma.
         </p>
       </div>
-
       {errors.root && (
         <Alert variant="destructive" className="text-left">
           <ExclamationTriangleIcon className="h-4 w-4" />
@@ -86,7 +83,6 @@ export default function SignIn() {
           </AlertDescription>
         </Alert>
       )}
-
       <div className="space-y-4">
         <div className="space-y-2">
           <Input
@@ -119,7 +115,6 @@ export default function SignIn() {
           )}
         </div>
       </div>
-
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Checkbox
@@ -140,11 +135,9 @@ export default function SignIn() {
           Forgot your password?
         </Link>
       </div>
-
       <LoadingButton type="submit" className="w-full h-12" loading={isSubmitting}>
         Sign in <span className="ml-2">→</span>
       </LoadingButton>
-
       <div className="text-center text-sm">
         Not yet registered?{' '}
         <Link href="/sign-up" className="font-medium text-primary hover:underline">
@@ -154,4 +147,17 @@ export default function SignIn() {
       </div>
     </form>
   )
-} 
+}
+
+// Main component with Suspense boundary
+export default function SignIn() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-[200px]">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    }>
+      <SignInForm />
+    </Suspense>
+  )
+}
