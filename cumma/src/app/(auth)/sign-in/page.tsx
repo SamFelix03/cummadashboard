@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { signIn, useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Suspense, useEffect } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { LoadingButton } from '@/components/ui/loading-button'
@@ -22,6 +22,7 @@ function SignInForm() {
   const searchParams = useSearchParams()
   const { data: session } = useSession()
   const from = searchParams.get('from')
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
   useEffect(() => {
     if (session?.user) {
@@ -43,12 +44,15 @@ function SignInForm() {
 
   const onSubmit = async (data: FormData) => {
     try {
+      setIsRedirecting(true)
       const result = await signIn('credentials', {
         email: data.email,
         password: data.password,
         redirect: false,
       })
+
       if (result?.error) {
+        setIsRedirecting(false)
         setError('root', { 
           type: 'manual',
           message: result.error === 'No user found with this email'
@@ -59,7 +63,17 @@ function SignInForm() {
         })
         return
       }
+
+      if (result?.ok) {
+        await router.refresh()
+        const session = await fetch('/api/auth/session').then(res => res.json())
+        const redirectTo = from || 
+          (session?.user?.userType === 'startup' ? '/startup/dashboard' : '/service-provider/dashboard')
+        router.push(redirectTo)
+      }
+
     } catch (error: any) {
+      setIsRedirecting(false)
       setError('root', { 
         type: 'manual',
         message: 'An unexpected error occurred. Please try again.'
@@ -135,8 +149,13 @@ function SignInForm() {
           Forgot your password?
         </Link>
       </div>
-      <LoadingButton type="submit" className="w-full h-12" loading={isSubmitting}>
-        Sign in <span className="ml-2">→</span>
+      <LoadingButton 
+        type="submit" 
+        className="w-full h-12" 
+        loading={isSubmitting || isRedirecting}
+      >
+        {isRedirecting ? 'Redirecting...' : 'Sign in'} 
+        {!isRedirecting && <span className="ml-2">→</span>}
       </LoadingButton>
       <div className="text-center text-sm">
         Not yet registered?{' '}
