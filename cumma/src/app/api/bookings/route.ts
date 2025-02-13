@@ -38,7 +38,7 @@ export async function GET() {
       },
       {
         $lookup: {
-          from: 'startups',
+          from: 'Startups',
           localField: 'startupId',
           foreignField: '_id',
           as: 'startup'
