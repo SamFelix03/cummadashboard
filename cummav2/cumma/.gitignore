@@ -1,0 +1,6 @@
+/.env
+/.env.local
+/Context
+/node_modules
+node_modules
+node_modules
